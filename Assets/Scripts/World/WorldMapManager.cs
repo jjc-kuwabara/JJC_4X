@@ -212,4 +212,10 @@ public class WorldMapManager : MonoBehaviour
     {
         return overWriteMap.GetCellCenterWorld(tilePos);
     }
+
+    public void MoveTilemap(Vector3 diffVector)
+    {
+        Transform tilemapParent = worldMap.transform.parent;
+        tilemapParent.position += diffVector;
+    }
 }
