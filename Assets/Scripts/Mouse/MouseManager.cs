@@ -15,7 +15,7 @@ public class MouseManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Application.worldMapManager.SetRangeOverWrite(WorldMapManager.OVERWRITE_TILE.RED, selectedPos);
+//        Application.worldMapManager.SetRangeOverWrite(WorldMapManager.OVERWRITE_TILE.RED, selectedPos);
 
         if (Input.GetMouseButtonDown(0))
         {
@@ -29,7 +29,8 @@ public class MouseManager : MonoBehaviour
                 {
                     clickedGameObject = hit.collider.gameObject;
 
-                    Application.worldMapManager.SetRangeOverWrite(WorldMapManager.OVERWRITE_TILE.RED, hit.point);
+
+                    Application.worldMapManager.SetRangeOverWrite(WorldMapManager.OVERWRITE_TILE.RED, hit.point, 8);
                 }
             }
         }

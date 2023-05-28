@@ -60,4 +60,21 @@ public class Application : MonoBehaviour
         }
     }
 
+    private DebugUIManager _debugUIManager;
+    static public DebugUIManager debugUIManager
+    {
+        get
+        {
+            if (S != null)
+            {
+                if (S._debugUIManager == null)
+                {
+                    S._debugUIManager = GameObject.Find("DebugUIManager").GetComponent<DebugUIManager>();
+                }
+                return S._debugUIManager;
+            }
+            return null;
+        }
+    }
+
 }
