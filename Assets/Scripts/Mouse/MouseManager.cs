@@ -17,8 +17,11 @@ public class MouseManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //        Application.worldMapManager.SetRangeOverWrite(WorldMapManager.OVERWRITE_TILE.RED, selectedPos);
+        UpdateMouseOnWorldMap();
+    }
 
+    void UpdateMouseOnWorldMap()
+    {
         if (Input.GetMouseButtonDown(0))
         {
             GameObject clickedGameObject = null; // マウスでクリックしたゲームオブジェクト.
@@ -32,7 +35,7 @@ public class MouseManager : MonoBehaviour
                     clickedGameObject = hit.collider.gameObject;
 
 
-                    Application.worldMapManager.SetRangeOverWrite(WorldMapManager.OVERWRITE_TILE.RED, hit.point, 8);
+                    LeftClickOnWorldMap(hit.point);
                 }
             }
         }
@@ -74,6 +77,26 @@ public class MouseManager : MonoBehaviour
             {
                 isMiddleClickHold = false;
             }
+        }
+    }
+
+    void LeftClickOnWorldMap(Vector3 clickerWorldPos)
+    {
+        //Application.worldMapManager.SetRangeOverWrite(WorldMapManager.OVERWRITE_TILE.RED, clickerWorldPos, 8);
+
+        // キャラクターの移動.
+        /*
+         * キャラクターをマウスクリックして選択する.
+         * 移動先の座標をクリックして、移動先を決める.
+         * キャラクターが移動する間、操作が効かないようにする.
+         */
+        VectorOnTile tilePos = Application.worldMapManager.GetTilePosFromWorldPos(clickerWorldPos);
+        if (Application.worldMapManager.IsValid(tilePos))
+        {
+            GameObject.Find("Chara").GetComponent<CharacterAI>().SetMoveDestination(tilePos);
+
+            VectorOnTile goalPos = new VectorOnTile(0, 0);
+            Application.worldMapManager.CalcRouteByAStar(tilePos, goalPos);
         }
     }
 }
