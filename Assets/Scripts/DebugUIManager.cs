@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,7 +24,7 @@ public class DebugUIManager : MonoBehaviour
     public void SetText(Vector3 worldPos, string text)
     {
         GameObject instance = Instantiate(debugTextPrefab);
-        instance.transform.parent = this.transform;
+        instance.transform.SetParent(this.transform);
         instance.transform.position = Camera.main.WorldToScreenPoint(worldPos);
         instance.GetComponent<Text>().text = text;
     }

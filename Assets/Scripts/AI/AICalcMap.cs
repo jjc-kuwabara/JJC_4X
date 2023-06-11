@@ -1,11 +1,11 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class AICalcMap
 {
-    int[][] calcMap;    // ŒvZ‚Ì‚½‚Ñ‚É‰Šú‰»‚·‚éƒ}ƒbƒv.
-    int[][] fixMap;     // “Á’è‚ÌƒCƒxƒ“ƒg‚ª‹N‚«‚½‚Ì‚İÄŒvZ‚·‚éƒ}ƒbƒv.
+    int[][] calcMap;    // è¨ˆç®—ã®ãŸã³ã«åˆæœŸåŒ–ã™ã‚‹ãƒãƒƒãƒ—.
+    int[][] fixMap;     // ç‰¹å®šã®ã‚¤ãƒ™ãƒ³ãƒˆãŒèµ·ããŸæ™‚ã®ã¿å†è¨ˆç®—ã™ã‚‹ãƒãƒƒãƒ—.
     List<AIAStarTileInfo> nextCalcTileList;
 
     public enum CALC_TYPE
@@ -21,6 +21,7 @@ public class AICalcMap
     public enum FIX_TYPE
     {
         MOVE_COST,
+        GOAL_DIST,
         NUM
     }
 
@@ -51,13 +52,13 @@ public class AICalcMap
     }
     public void SetRange(VectorOnTile tilePos, int range)
     {
-        // w’èÀ•W‚ª”ÍˆÍ“à‚É‚ ‚é‚©‚Ç‚¤‚©.
+        // æŒ‡å®šåº§æ¨™ãŒç¯„å›²å†…ã«ã‚ã‚‹ã‹ã©ã†ã‹.
         if (!Application.worldMapManager.IsValid(tilePos))
         {
             return;
         }
 
-        // w’èÀ•W‚ÉŠù‚É’l‚ª“ü‚Á‚Ä‚¢‚½ê‡‚ÉA‚»‚Ì’l‚ÆA¡‚©‚ç“ü‚ê‚æ‚¤‚Æ‚µ‚Ä‚¢‚é’l‚Æ‚ğ”äŠr‚·‚é.
+        // æŒ‡å®šåº§æ¨™ã«æ—¢ã«å€¤ãŒå…¥ã£ã¦ã„ãŸå ´åˆã«ã€ãã®å€¤ã¨ã€ä»Šã‹ã‚‰å…¥ã‚Œã‚ˆã†ã¨ã—ã¦ã„ã‚‹å€¤ã¨ã‚’æ¯”è¼ƒã™ã‚‹.
         int currentValue = GetMapValue(CALC_TYPE.MOVE, tilePos);
         if (currentValue != INVALID)
         {
@@ -66,16 +67,16 @@ public class AICalcMap
                 return;
             }
         }
-        // w’èÀ•W‚É’l‚ğ“ü—Í.
+        // æŒ‡å®šåº§æ¨™ã«å€¤ã‚’å…¥åŠ›.
         SetMapValue(CALC_TYPE.MOVE, tilePos, range);
 
-        // “ü—Í’l‚ªAŸ‚Ì’l‚ÌŒŸõ‚ğ‚·‚éŒ³‹C‚ğc‚µ‚Ä‚¢‚é‚©‚Ç‚¤‚©.
+        // å…¥åŠ›å€¤ãŒã€æ¬¡ã®å€¤ã®æ¤œç´¢ã‚’ã™ã‚‹å…ƒæ°—ã‚’æ®‹ã—ã¦ã„ã‚‹ã‹ã©ã†ã‹.
         if (range <= 0)
         {
             return;
         }
 
-        // ‚»‚ÌüˆÍ.
+        // ãã®å‘¨å›².
         for (WorldMapManager.CELL_CONNECT i = WorldMapManager.CELL_CONNECT.TOP; i < WorldMapManager.CELL_CONNECT.NUM; i++)
         {
             VectorOnTile calcingTilePos = Application.worldMapManager.GetConnectTilePos(tilePos, i);
@@ -99,6 +100,16 @@ public class AICalcMap
         for (int mapIndex = 0; mapIndex < Application.worldMapManager.mapMaxY * Application.worldMapManager.mapMaxX; mapIndex++)
         {
             fixMap[(int)FIX_TYPE.MOVE_COST][mapIndex] = 1;
+        }
+
+        // ãƒ‡ãƒãƒƒã‚°ç”¨ã«ã€æ­£ã—ã„ã‚³ã‚¹ãƒˆå€¤ã‚’è¡¨ç¤º.
+        VectorOnTile goalPos = new VectorOnTile(0, 0);
+        for (int mapIndex = 0; mapIndex < Application.worldMapManager.mapMaxY * Application.worldMapManager.mapMaxX; mapIndex++)
+        {
+            VectorOnTile tilePos = new VectorOnTile(mapIndex % Application.worldMapManager.mapMaxX, mapIndex / Application.worldMapManager.mapMaxX);
+            float huristicsCost = goalPos.GetMagnitude(tilePos);
+
+            fixMap[(int)FIX_TYPE.GOAL_DIST][mapIndex] = (int)(huristicsCost * 1000.0f);
         }
     }
 
@@ -136,7 +147,7 @@ public class AICalcMap
 
         while (!isReachGoal)
         {
-            // ’²¸‚·‚×‚«ƒZƒ‹‚ÌŒˆ’è.
+            // èª¿æŸ»ã™ã¹ãã‚»ãƒ«ã®æ±ºå®š.
             minScore = MAX_COST;
             minHuristicCost = MAX_COST;
             for (int listIndex = 0; listIndex < nextCalcTileList.Count; listIndex++)
@@ -165,12 +176,12 @@ public class AICalcMap
 
             AIAStarTileInfo calcTileInfo = nextCalcTileList[minIndex];
             Debug.Log(calcTileInfo.pos.x.ToString() + ", " + calcTileInfo.pos.y.ToString() + ", " + calcTileInfo.GetScore().ToString() );
-            // ’²¸‚·‚éƒZƒ‹‚ªŒˆ’è‚µ‚½ê‡A‚»‚ÌêŠ‚ÌƒRƒXƒg‚ÍŠm’è‚µ‚½.
+            // èª¿æŸ»ã™ã‚‹ã‚»ãƒ«ãŒæ±ºå®šã—ãŸå ´åˆã€ãã®å ´æ‰€ã®ã‚³ã‚¹ãƒˆã¯ç¢ºå®šã—ãŸ.
             SetMapValue(CALC_TYPE.ASTER_FIXED_COST, calcTileInfo.pos, (int)calcTileInfo.unfixedCost);
-            // ‚»‚ÌƒZƒ‹‚Í’²¸‚·‚×‚«ƒZƒ‹‚©‚çœŠO‚·‚é.
+            // ãã®ã‚»ãƒ«ã¯èª¿æŸ»ã™ã¹ãã‚»ãƒ«ã‹ã‚‰é™¤å¤–ã™ã‚‹.
             nextCalcTileList.RemoveAt(minIndex);
 
-            // Ÿ‚É’²¸‚·‚×‚«ƒZƒ‹‚ğŒˆ’è‚·‚é.
+            // æ¬¡ã«èª¿æŸ»ã™ã¹ãã‚»ãƒ«ã‚’æ±ºå®šã™ã‚‹.
             for (WorldMapManager.CELL_CONNECT i = WorldMapManager.CELL_CONNECT.TOP; i < WorldMapManager.CELL_CONNECT.NUM; i++)
             {
                 VectorOnTile connectTilePos = Application.worldMapManager.GetConnectTilePos(calcTileInfo.pos, i);
@@ -193,7 +204,7 @@ public class AICalcMap
                         AIAStarTileInfo info = nextCalcTileList[huristicsCheckListIndex];
                         if (info.pos.IsEqual(connectTilePos))
                         {
-                            // ‚·‚Å‚ÉŒvZÏ‚İ‚Ì–¢Š®—¹ƒRƒXƒg‚ªA¡‚©‚ç“ü‚ê‚æ‚¤‚Æ‚µ‚Ä‚¢‚éƒRƒXƒg’l‚æ‚è‚à’á‚¢‚È‚çA‚»‚Ì‚Ü‚Ü.
+                            // ã™ã§ã«è¨ˆç®—æ¸ˆã¿ã®æœªå®Œäº†ã‚³ã‚¹ãƒˆãŒã€ä»Šã‹ã‚‰å…¥ã‚Œã‚ˆã†ã¨ã—ã¦ã„ã‚‹ã‚³ã‚¹ãƒˆå€¤ã‚ˆã‚Šã‚‚ä½ã„ãªã‚‰ã€ãã®ã¾ã¾.
                             if( info.unfixedCost < unfixedCost)
                             {
                                 continue;
@@ -207,12 +218,12 @@ public class AICalcMap
                 float huristicsCost = goalPos.GetMagnitude(connectTilePos);
                 AIAStarTileInfo newCalcTile = new AIAStarTileInfo(connectTilePos, unfixedCost, huristicsCost);
                 nextCalcTileList.Add(newCalcTile);
-                SetMapValue(CALC_TYPE.ASTER_HEURISTICS_COST, connectTilePos, (int)(huristicsCost * 1000.0f)); // ’²¸Œó•â.
+                SetMapValue(CALC_TYPE.ASTER_HEURISTICS_COST, connectTilePos, (int)(huristicsCost * 1000.0f)); // èª¿æŸ»å€™è£œ.
 
 
                 if (goalPos.IsEqual(connectTilePos))
                 {
-                    // ƒS[ƒ‹‚É‚Â‚¢‚½I.
+                    // ã‚´ãƒ¼ãƒ«ã«ã¤ã„ãŸï¼.
                     isReachGoal = true;
                     SetMapValue(CALC_TYPE.ASTER_FIXED_COST, connectTilePos, (int)unfixedCost);
                     break;
@@ -236,20 +247,21 @@ public class AICalcMap
         }
         Debug.Log(loopCount);
 
-        // ƒS[ƒ‹‚É‚Â‚¢‚Ä‚¢‚½‚çAÀÛ‚Ìƒ‹[ƒg‚ğŒvZ‚·‚é.
+        // ã‚´ãƒ¼ãƒ«ã«ã¤ã„ã¦ã„ãŸã‚‰ã€å®Ÿéš›ã®ãƒ«ãƒ¼ãƒˆã‚’è¨ˆç®—ã™ã‚‹.
         
         if (isReachGoal)
         {
             bool isReachStart = false;
             VectorOnTile currentCheckPos = goalPos;
-            SetMapValue(CALC_TYPE.ASTER_RESULT_ROUTE, goalPos, GetMapValue(CALC_TYPE.ASTER_FIXED_COST, goalPos));
+            SetMapValue(CALC_TYPE.ASTER_RESULT_ROUTE, goalPos, 0);
             VectorOnTile minRoutePos = new VectorOnTile(0, 0);
-            loopCount = 0;
+            loopCount = 1;
             while (!isReachStart)
             {
                 minScore = MAX_COST;
                 int checkFixedCost = 0;
-                // Ÿ‚É’²¸‚·‚×‚«ƒZƒ‹‚ğŒˆ’è‚·‚é.
+                bool isFound = false;
+                // æ¬¡ã«èª¿æŸ»ã™ã¹ãã‚»ãƒ«ã‚’æ±ºå®šã™ã‚‹.
                 for (WorldMapManager.CELL_CONNECT i = WorldMapManager.CELL_CONNECT.TOP; i < WorldMapManager.CELL_CONNECT.NUM; i++)
                 {
                     VectorOnTile connectTilePos = Application.worldMapManager.GetConnectTilePos(currentCheckPos, i);
@@ -267,15 +279,23 @@ public class AICalcMap
                     {
                         minScore = checkFixedCost;
                         minRoutePos = connectTilePos;
+                        isFound = true;
                     }
                 }
 
+                if (!isFound)
+                {
+                    // ãŸã©ã‚‹ã¹ããƒ«ãƒ¼ãƒˆãŒç„¡ã‹ã£ãŸ.
+                    Debug.Assert(false);
+                }
+
                 currentCheckPos = minRoutePos;
-                SetMapValue(CALC_TYPE.ASTER_RESULT_ROUTE, currentCheckPos, checkFixedCost);
+                int cellNumFromGoal = loopCount;
+                SetMapValue(CALC_TYPE.ASTER_RESULT_ROUTE, currentCheckPos, cellNumFromGoal);
 
                 if (startPos.IsEqual(currentCheckPos))
                 {
-                    // ƒS[ƒ‹‚É‚Â‚¢‚½I.
+                    // ã‚´ãƒ¼ãƒ«ã«ã¤ã„ãŸï¼.
                     isReachStart = true;
                     break;
                 }

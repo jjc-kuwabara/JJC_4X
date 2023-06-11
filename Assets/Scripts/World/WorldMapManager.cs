@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -48,7 +48,7 @@ public class WorldMapManager : MonoBehaviour
     public int mapMaxX = 50;
     public int mapMaxY = 50;
     AICalcMap aiCalcMap;
-    public int debugASterLoopMax = 1;
+    public int debugASterLoopMax = 1000;
 
     // Start is called before the first frame update
     void Start()
@@ -122,7 +122,7 @@ public class WorldMapManager : MonoBehaviour
 
 
     /*
-     * OverWriteMap‚ğA“Á’è”ÍˆÍ‚ÌŠÔ‚¾‚¯‘‚«‚Ş.
+     * OverWriteMapã‚’ã€ç‰¹å®šç¯„å›²ã®é–“ã ã‘æ›¸ãè¾¼ã‚€.
      */
     public void SetRangeOverWrite(OVERWRITE_TILE tileId, Vector3 worldPos, int range)
     {
@@ -130,11 +130,11 @@ public class WorldMapManager : MonoBehaviour
 
         Application.debugUIManager.ClearDebugUI();
 
-        // ŒvZ—p‚ÌMap‚ğ‘‚«‚Ş.
+        // è¨ˆç®—ç”¨ã®Mapã‚’æ›¸ãè¾¼ã‚€.
         aiCalcMap.ClearCalcMap();
         aiCalcMap.SetRange(tilePos, range);
 
-        // ŒvZMap‚Ì’l‚ğ‚İ‚ÄAÀÛ‚ÉTilemap‚ğ‘‚«Š·‚¦‚é.
+        // è¨ˆç®—Mapã®å€¤ã‚’ã¿ã¦ã€å®Ÿéš›ã«Tilemapã‚’æ›¸ãæ›ãˆã‚‹.
         int nTileId = (int)tileId;
         TileBase selectedTile = overWriteTileList[nTileId];
         for (int y_index = 0; y_index < mapMaxY; y_index++)
@@ -245,7 +245,7 @@ public class WorldMapManager : MonoBehaviour
 
         aiCalcMap.CalcRouteByAStar(startPos, goalPos);
 
-        // ƒfƒoƒbƒO—p‚Éƒ}ƒbƒv•\¦‚ğ‚³‚¹‚é.
+        // ãƒ‡ãƒãƒƒã‚°ç”¨ã«ãƒãƒƒãƒ—è¡¨ç¤ºã‚’ã•ã›ã‚‹.
         overWriteMap.ClearAllTiles();
         TileBase selectedTile = overWriteTileList[0];
         int value = 0;
@@ -260,6 +260,9 @@ public class WorldMapManager : MonoBehaviour
                     selectedTile = overWriteTileList[(int)OVERWRITE_TILE.GREEN];
                     overWriteMap.SetTile(checkPos.ConvertToVector3Int(), selectedTile);
                     if (debugASterLoopMax % 2 == 0) {
+                        int calcedHeuristicsCost = aiCalcMap.GetMapValue(CALC_TYPE.ASTER_HEURISTICS_COST, checkPos);
+                        int fixedHeuristicsCost = aiCalcMap.GetFixMapValue(FIX_TYPE.GOAL_DIST, checkPos);
+                        value = fixedHeuristicsCost;
                         Application.debugUIManager.SetText(GetWorldPosFromTilePos(checkPos), value.ToString());
                     }
                 }
@@ -272,7 +275,7 @@ public class WorldMapManager : MonoBehaviour
                     overWriteMap.SetTile(checkPos.ConvertToVector3Int(), selectedTile);
                     if (debugASterLoopMax % 2 == 1)
                     {
-                        Application.debugUIManager.SetText(GetWorldPosFromTilePos(checkPos), value.ToString());
+                        //Application.debugUIManager.SetText(GetWorldPosFromTilePos(checkPos), value.ToString());
                     }
                 }
 
@@ -281,6 +284,11 @@ public class WorldMapManager : MonoBehaviour
                 {
                     selectedTile = overWriteTileList[(int)OVERWRITE_TILE.RED];
                     overWriteMap.SetTile(checkPos.ConvertToVector3Int(), selectedTile);
+
+                    if (debugASterLoopMax % 2 == 1)
+                    {
+                        Application.debugUIManager.SetText(GetWorldPosFromTilePos(checkPos), value.ToString());
+                    }
                 }
             }
         }
