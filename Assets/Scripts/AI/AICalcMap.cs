@@ -15,13 +15,13 @@ public class AICalcMap
         ASTER_FIXED_COST,
         ASTER_HEURISTICS_COST, 
         ASTER_RESULT_ROUTE,
+        DEBUG_DIST_FROM_CLICK,
         NUM
     }
 
     public enum FIX_TYPE
     {
         MOVE_COST,
-        GOAL_DIST,
         NUM
     }
 
@@ -47,6 +47,7 @@ public class AICalcMap
         }
 
         RefreshMoveCostMap();
+        RefreshDistFromClick(new VectorOnTile(0, 0));
 
         nextCalcTileList = new List<AIAStarTileInfo>();
     }
@@ -101,15 +102,17 @@ public class AICalcMap
         {
             fixMap[(int)FIX_TYPE.MOVE_COST][mapIndex] = 1;
         }
+    }
 
+    public void DEBUG_RefreshDistFromClick(VectorOnTile mouseClickPos)
+    {
         // デバッグ用に、正しいコスト値を表示.
-        VectorOnTile goalPos = new VectorOnTile(0, 0);
         for (int mapIndex = 0; mapIndex < Application.worldMapManager.mapMaxY * Application.worldMapManager.mapMaxX; mapIndex++)
         {
             VectorOnTile tilePos = new VectorOnTile(mapIndex % Application.worldMapManager.mapMaxX, mapIndex / Application.worldMapManager.mapMaxX);
-            float huristicsCost = goalPos.GetMagnitude(tilePos);
+            float huristicsCost = mouseClickPos.GetMagnitude(tilePos);
 
-            fixMap[(int)FIX_TYPE.GOAL_DIST][mapIndex] = (int)(huristicsCost * 1000.0f);
+            calcMap[(int)CALC_TYPE.DEBUG_DIST_FROM_CLICK][mapIndex] = (int)(huristicsCost * 1000.0f);
         }
     }
 
@@ -259,7 +262,9 @@ public class AICalcMap
             while (!isReachStart)
             {
                 minScore = MAX_COST;
+                minHuristicCost = MAX_COST;
                 int checkFixedCost = 0;
+                int heuristicsCost = 0;
                 bool isFound = false;
                 // 次に調査すべきセルを決定する.
                 for (WorldMapManager.CELL_CONNECT i = WorldMapManager.CELL_CONNECT.TOP; i < WorldMapManager.CELL_CONNECT.NUM; i++)
@@ -275,12 +280,29 @@ public class AICalcMap
                         continue;
                     }
 
-                    if (minScore > checkFixedCost)
-                    {
-                        minScore = checkFixedCost;
-                        minRoutePos = connectTilePos;
-                        isFound = true;
+                    if (minScore >= checkFixedCost) {
+                        heuristicsCost = GetMapValue(CALC_TYPE.ASTER_HEURISTICS_COST, connectTilePos);
+
+                        if (minScore > checkFixedCost)
+                        {
+                            minScore = checkFixedCost;
+                            minHuristicCost = heuristicsCost;
+                            minRoutePos = connectTilePos;
+                            isFound = true;
+                        }
+                        else if (minScore == checkFixedCost)
+                        {
+                            if (minHuristicCost > heuristicsCost)
+                            {
+                                minScore = checkFixedCost;
+                                minHuristicCost = heuristicsCost;
+                                minRoutePos = connectTilePos;
+                                isFound = true;
+                            }
+                        }
                     }
+
+
                 }
 
                 if (!isFound)

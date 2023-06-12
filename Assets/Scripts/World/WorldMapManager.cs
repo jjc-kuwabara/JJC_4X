@@ -48,7 +48,7 @@ public class WorldMapManager : MonoBehaviour
     public int mapMaxX = 50;
     public int mapMaxY = 50;
     AICalcMap aiCalcMap;
-    public int debugASterLoopMax = 1000;
+    public int debugASterLoopMax;
 
     // Start is called before the first frame update
     void Start()
@@ -68,6 +68,7 @@ public class WorldMapManager : MonoBehaviour
                 if (worldMap.HasTile(tilePos))
                 {
                     int tileIndex = x_index % 4;
+                    tileIndex = 0;
                     worldMap.SetTile(tilePos, worldTileList[tileIndex]);
                 }
             }
@@ -254,17 +255,21 @@ public class WorldMapManager : MonoBehaviour
             for (int x_index = 0; x_index < mapMaxX; x_index++)
             {
                 VectorOnTile checkPos = new VectorOnTile(x_index, y_index);
+
                 value = aiCalcMap.GetMapValue(CALC_TYPE.ASTER_HEURISTICS_COST, checkPos);
                 if (value != AICalcMap.INVALID)
                 {
                     selectedTile = overWriteTileList[(int)OVERWRITE_TILE.GREEN];
                     overWriteMap.SetTile(checkPos.ConvertToVector3Int(), selectedTile);
+#if false
                     if (debugASterLoopMax % 2 == 0) {
                         int calcedHeuristicsCost = aiCalcMap.GetMapValue(CALC_TYPE.ASTER_HEURISTICS_COST, checkPos);
                         int fixedHeuristicsCost = aiCalcMap.GetFixMapValue(FIX_TYPE.GOAL_DIST, checkPos);
+                        fixedHeuristicsCost = aiCalcMap.GetMapValue(CALC_TYPE.DIST_FROM_CLICK, checkPos);
                         value = fixedHeuristicsCost;
                         Application.debugUIManager.SetText(GetWorldPosFromTilePos(checkPos), value.ToString());
                     }
+#endif
                 }
 
 
@@ -279,14 +284,43 @@ public class WorldMapManager : MonoBehaviour
                     }
                 }
 
+                // 距離によるマス目の色.
+                value = aiCalcMap.GetMapValue(CALC_TYPE.ASTER_FIXED_COST, checkPos);
+                if (value != AICalcMap.INVALID)
+                {
+                    switch (value % 2)
+                    {
+                        case 0:
+                            selectedTile = overWriteTileList[(int)OVERWRITE_TILE.BLUE];
+                            break;
+                        case 1:
+                            selectedTile = overWriteTileList[(int)OVERWRITE_TILE.RED];
+                            break;
+                    }
+                    overWriteMap.SetTile(checkPos.ConvertToVector3Int(), selectedTile);
+                }
+
+                // 正解ルートを色変え.
                 value = aiCalcMap.GetMapValue(CALC_TYPE.ASTER_RESULT_ROUTE, checkPos);
                 if (value != AICalcMap.INVALID)
                 {
-                    selectedTile = overWriteTileList[(int)OVERWRITE_TILE.RED];
+                    selectedTile = overWriteTileList[(int)OVERWRITE_TILE.YELLOW];
                     overWriteMap.SetTile(checkPos.ConvertToVector3Int(), selectedTile);
 
                     if (debugASterLoopMax % 2 == 1)
                     {
+                        Application.debugUIManager.SetText(GetWorldPosFromTilePos(checkPos), value.ToString());
+                    }
+                }
+
+                // クリック位置からの距離.
+                value = aiCalcMap.GetMapValue(CALC_TYPE.DIST_FROM_CLICK, checkPos);
+                if (value != AICalcMap.INVALID)
+                {
+                    if (debugASterLoopMax % 2 == 0)
+                    {
+                        int fixedHeuristicsCost = aiCalcMap.GetMapValue(CALC_TYPE.DIST_FROM_CLICK, checkPos);
+                        value = fixedHeuristicsCost;
                         Application.debugUIManager.SetText(GetWorldPosFromTilePos(checkPos), value.ToString());
                     }
                 }
